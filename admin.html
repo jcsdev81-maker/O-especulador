@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESPECULADOR • ADMIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#141720;--bg4:#1a1e28;--brd:#1e2433;--brd2:#2a3040;--g:#00E676;--gd:#00E67620;--g2:#00E67640;--c:#00BCD4;--cd:#00BCD420;--r:#FF5252;--rd:#FF525220;--a:#FFD740;--ad:#FFD74020;--p:#B388FF;--t1:#e4e8f0;--t2:#8892a4;--t3:#4a5468;--gold:#FFD700}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'Barlow Condensed',sans-serif;font-size:16px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px}
+
+/* AUTH SCREEN */
+.auth{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+.auth-box{width:100%;max-width:340px;padding:20px}
+.auth h1{font-family:'Orbitron';font-size:20px;font-weight:800;color:var(--g);letter-spacing:4px;text-align:center;margin-bottom:4px}
+.auth p{font-family:'Share Tech Mono';font-size:10px;color:var(--t3);text-align:center;letter-spacing:2px;margin-bottom:28px}
+.auth input{width:100%;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;padding:11px 14px;color:var(--t1);font-size:14px;outline:none;margin-bottom:10px}
+.auth input:focus{border-color:var(--g)}
+.auth button{width:100%;padding:12px;background:var(--g);border:none;border-radius:6px;color:#000;font-family:'Orbitron';font-size:11px;font-weight:700;cursor:pointer}
+.auth button:hover{filter:brightness(1.1)}
+.auth-msg{font-family:'Share Tech Mono';font-size:11px;text-align:center;margin-top:10px;min-height:16px}
+
+/* LAYOUT */
+.shell{display:none;height:100vh;flex-direction:column}
+.shell.on{display:flex}
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--bg2);border-bottom:1px solid var(--brd)}
+.top-l{display:flex;align-items:center;gap:12px}
+.top-l h1{font-family:'Orbitron';font-size:13px;font-weight:700;color:var(--g);letter-spacing:3px}
+.top-l span{font-family:'Share Tech Mono';font-size:9px;color:var(--t3);letter-spacing:1px;padding:3px 8px;background:var(--rd);border:1px solid var(--r);border-radius:3px;color:var(--r)}
+.top-r{display:flex;align-items:center;gap:12px}
+.top-r span{font-family:'Share Tech Mono';font-size:10px;color:var(--t2)}
+.btn-out{padding:6px 14px;background:transparent;border:1px solid var(--brd);border-radius:4px;color:var(--t3);font-family:'Share Tech Mono';font-size:10px;cursor:pointer}
+.btn-out:hover{border-color:var(--r);color:var(--r)}
+
+/* STATS BAR */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:16px 20px;background:var(--bg2);border-bottom:1px solid var(--brd)}
+.stat{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0 3px 3px 0}
+.stat.sg::before{background:var(--g)}.stat.sc::before{background:var(--c)}.stat.sa::before{background:var(--a)}.stat.sr::before{background:var(--r)}.stat.sp::before{background:var(--p)}
+.stat-n{font-family:'Share Tech Mono';font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.stat-v{font-family:'Orbitron';font-size:22px;font-weight:700;color:var(--t1);line-height:1}
+.stat-d{font-family:'Share Tech Mono';font-size:10px;color:var(--t2);margin-top:4px}
+
+/* TOOLBAR */
+.bar{display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1px solid var(--brd);flex-wrap:wrap}
+.bar input{background:var(--bg3);border:1px solid var(--brd);border-radius:5px;padding:7px 12px;color:var(--t1);font-family:'Share Tech Mono';font-size:12px;outline:none;width:240px}
+.bar input:focus{border-color:var(--c)}
+.bar select{background:var(--bg3);border:1px solid var(--brd);border-radius:5px;padding:7px 10px;color:var(--t1);font-family:'Share Tech Mono';font-size:11px;outline:none}
+.btn{padding:7px 16px;border-radius:5px;font-family:'Orbitron';font-size:9px;font-weight:600;letter-spacing:1px;cursor:pointer;border:1px solid;transition:all .2s}
+.btn-g{background:var(--gd);border-color:var(--g);color:var(--g)}.btn-g:hover{background:var(--g);color:#000}
+.btn-c{background:var(--cd);border-color:var(--c);color:var(--c)}.btn-c:hover{background:var(--c);color:#000}
+.btn-r{background:var(--rd);border-color:var(--r);color:var(--r)}.btn-r:hover{background:var(--r);color:#000}
+
+/* TABLE */
+.tbl-wrap{flex:1;overflow:auto;padding:0 20px 20px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{font-family:'Share Tech Mono';font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--brd);position:sticky;top:0;background:var(--bg)}
+td{padding:10px 12px;border-bottom:1px solid var(--brd);font-size:13px;color:var(--t2);font-weight:300;vertical-align:middle}
+tr:hover td{background:var(--bg3)}
+.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-family:'Share Tech Mono';font-size:10px;font-weight:600;letter-spacing:.5px}
+.b-trial{background:var(--cd);color:var(--c);border:1px solid var(--c)}
+.b-prem{background:var(--gd);color:var(--g);border:1px solid var(--g)}
+.b-exp{background:var(--rd);color:var(--r);border:1px solid var(--r)}
+.days{font-family:'Orbitron';font-size:12px;font-weight:600}
+.days.ok{color:var(--g)}.days.low{color:var(--a)}.days.dead{color:var(--r)}
+.act{display:flex;gap:4px;flex-wrap:wrap}
+.act button{padding:4px 10px;border-radius:3px;font-family:'Share Tech Mono';font-size:9px;cursor:pointer;border:1px solid;transition:.2s}
+.act .a-prem{background:var(--gd);border-color:var(--g);color:var(--g)}.act .a-prem:hover{background:var(--g);color:#000}
+.act .a-ext{background:var(--ad);border-color:var(--a);color:var(--a)}.act .a-ext:hover{background:var(--a);color:#000}
+.act .a-blk{background:var(--rd);border-color:var(--r);color:var(--r)}.act .a-blk:hover{background:var(--r);color:#fff}
+.act .a-rst{background:var(--cd);border-color:var(--c);color:var(--c)}.act .a-rst:hover{background:var(--c);color:#000}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-family:'Share Tech Mono';font-size:12px;z-index:200;transform:translateY(80px);opacity:0;transition:all .3s}
+.toast.on{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--g);color:#000}.toast.err{background:var(--r);color:#fff}.toast.inf{background:var(--c);color:#000}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--t3);font-family:'Share Tech Mono';font-size:13px}
+
+@media(max-width:768px){
+  .stats{grid-template-columns:1fr 1fr}.bar input{width:100%}.tbl-wrap{padding:0 10px 10px}
+  td,th{padding:8px 6px;font-size:11px}.act button{font-size:8px;padding:3px 6px}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth" id="authScreen">
+  <div class="auth-box">
+    <h1>ADMIN</h1>
+    <p>PAINEL ESPECULADOR</p>
+    <input type="email" id="aEmail" placeholder="E-mail admin">
+    <input type="password" id="aPass" placeholder="Senha">
+    <button onclick="adminLogin()">ENTRAR</button>
+    <div class="auth-msg" id="aMsg"></div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell">
+  <div class="top">
+    <div class="top-l">
+      <h1>ESPECULADOR</h1>
+      <span>ADMIN</span>
+    </div>
+    <div class="top-r">
+      <span id="adminEmail">—</span>
+      <button class="btn-out" onclick="adminLogout()">SAIR</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="statsBar">
+    <div class="stat sg"><div class="stat-n">TOTAL USUÁRIOS</div><div class="stat-v" id="stTotal">0</div><div class="stat-d">cadastrados</div></div>
+    <div class="stat sc"><div class="stat-n">TRIAL ATIVO</div><div class="stat-v" id="stTrial">0</div><div class="stat-d">testando agora</div></div>
+    <div class="stat sp"><div class="stat-n">PREMIUM</div><div class="stat-v" id="stPrem">0</div><div class="stat-d">pagantes</div></div>
+    <div class="stat sr"><div class="stat-n">EXPIRADOS</div><div class="stat-v" id="stExp">0</div><div class="stat-d">potenciais clientes</div></div>
+    <div class="stat sa"><div class="stat-n">RECEITA EST.</div><div class="stat-v" id="stRev">R$ 0</div><div class="stat-d" id="stRevD">R$ 97/mês × assinantes</div></div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="bar">
+    <input type="text" id="searchInput" placeholder="🔍 Buscar email..." oninput="filterUsers()">
+    <select id="filterStatus" onchange="filterUsers()">
+      <option value="">Todos</option>
+      <option value="trial">Trial</option>
+      <option value="premium">Premium</option>
+      <option value="expired">Expirados</option>
+    </select>
+    <button class="btn btn-c" onclick="loadUsers()">↻ ATUALIZAR</button>
+    <button class="btn btn-g" onclick="exportCSV()">📥 EXPORTAR CSV</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>EMAIL</th>
+          <th>STATUS</th>
+          <th>DIAS RESTANTES</th>
+          <th>CADASTRO</th>
+          <th>TRIAL INÍCIO</th>
+          <th>AÇÕES</th>
+        </tr>
+      </thead>
+      <tbody id="userTable">
+        <tr><td colspan="6" class="empty">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ CONFIG ═══
+var SB_URL='https://arstesmktmfbibglanfn.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyc3Rlc21rdG1mYmliZ2xhbmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyMDcsImV4cCI6MjA5MTM1MjIwN30.PLXnXmHQ2T-kz8tlG1X9yepwa5kw5t6J2Xfvtw6IdE4';
+// ADMIN EMAILS — só esses podem acessar o painel
+var ADMINS=['jamiscosta81@gmail.com','jcsdev81@gmail.com'];
+var sb=window.supabase.createClient(SB_URL,SB_KEY);
+var allUsers=[];
+
+// ═══ AUTH ═══
+async function adminLogin(){
+  var email=document.getElementById('aEmail').value.trim();
+  var pass=document.getElementById('aPass').value;
+  if(!email||!pass){aMsg('Preencha os campos',true);return;}
+  if(ADMINS.indexOf(email)===-1){aMsg('Acesso negado — apenas administradores',true);return;}
+  document.querySelector('.auth button').textContent='Entrando...';
+  var r=await sb.auth.signInWithPassword({email:email,password:pass});
+  document.querySelector('.auth button').textContent='ENTRAR';
+  if(r.error){aMsg(r.error.message,true);return;}
+  showAdmin(r.data.user.email);
+}
+function aMsg(m,err){var el=document.getElementById('aMsg');el.textContent=m;el.style.color=err?'var(--r)':'var(--g)';}
+
+async function checkSession(){
+  var s=await sb.auth.getSession();
+  if(s.data.session){
+    var email=s.data.session.user.email;
+    if(ADMINS.indexOf(email)>-1){showAdmin(email);return;}
+  }
+}
+checkSession();
+
+function showAdmin(email){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('shell').classList.add('on');
+  document.getElementById('adminEmail').textContent=email;
+  loadUsers();
+}
+
+async function adminLogout(){
+  await sb.auth.signOut();
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('shell').classList.remove('on');
+}
+
+// ═══ LOAD USERS ═══
+async function loadUsers(){
+  var r=await sb.from('profiles').select('*').order('created_at',{ascending:false});
+  if(r.error){toast('Erro: '+r.error.message,'err');return;}
+  allUsers=r.data||[];
+  updateStats();
+  renderTable(allUsers);
+}
+
+// ═══ STATS ═══
+function updateStats(){
+  var total=allUsers.length;
+  var trial=0,prem=0,exp=0;
+  var now=new Date();
+  allUsers.forEach(function(u){
+    if(u.subscription_status==='premium'){prem++;}
+    else if(u.subscription_status==='expired'){exp++;}
+    else{
+      var end=new Date(new Date(u.trial_start).getTime()+u.trial_days*86400000);
+      if(now>end){exp++;}else{trial++;}
+    }
+  });
+  document.getElementById('stTotal').textContent=total;
+  document.getElementById('stTrial').textContent=trial;
+  document.getElementById('stPrem').textContent=prem;
+  document.getElementById('stExp').textContent=exp;
+  document.getElementById('stRev').textContent='R$ '+(prem*97).toLocaleString('pt-BR');
+  document.getElementById('stRevD').textContent='R$ 97/mês × '+prem+' assinantes';
+}
+
+// ═══ RENDER TABLE ═══
+function renderTable(users){
+  var tb=document.getElementById('userTable');
+  if(!users.length){tb.innerHTML='<tr><td colspan="6" class="empty">Nenhum usuário encontrado</td></tr>';return;}
+  var now=new Date();
+  var html='';
+  users.forEach(function(u){
+    var start=new Date(u.trial_start);
+    var end=new Date(start.getTime()+u.trial_days*86400000);
+    var diff=end.getTime()-now.getTime();
+    var days=Math.ceil(diff/86400000);
+    var status=u.subscription_status;
+    if(status==='trial'&&days<=0)status='expired';
+
+    var badgeCls=status==='premium'?'b-prem':status==='expired'?'b-exp':'b-trial';
+    var badgeTxt=status==='premium'?'★ PREMIUM':status==='expired'?'EXPIRADO':'TRIAL';
+    var dayCls=days>2?'ok':days>0?'low':'dead';
+    var dayTxt=status==='premium'?'∞':days>0?days+'d':'0d';
+    var created=new Date(u.created_at).toLocaleDateString('pt-BR');
+    var trialDt=start.toLocaleDateString('pt-BR');
+
+    html+='<tr>'
+      +'<td style="color:var(--t1);font-weight:400;font-family:\'Share Tech Mono\'">'+u.email+'</td>'
+      +'<td><span class="badge '+badgeCls+'">'+badgeTxt+'</span></td>'
+      +'<td><span class="days '+dayCls+'">'+dayTxt+'</span></td>'
+      +'<td>'+created+'</td>'
+      +'<td>'+trialDt+'</td>'
+      +'<td><div class="act">'
+      +(status!=='premium'?'<button class="a-prem" onclick="setPrem(\''+u.id+'\')">★ PREMIUM</button>':'')
+      +(status!=='expired'?'<button class="a-blk" onclick="setBlock(\''+u.id+'\')">✕ BLOQUEAR</button>':'')
+      +(status==='expired'?'<button class="a-ext" onclick="extTrial(\''+u.id+'\',7)">+7 DIAS</button>':'')
+      +(status==='expired'?'<button class="a-rst" onclick="extTrial(\''+u.id+'\',3)">↻ RESET 3D</button>':'')
+      +'</div></td></tr>';
+  });
+  tb.innerHTML=html;
+}
+
+// ═══ ACTIONS ═══
+async function setPrem(id){
+  if(!confirm('Dar acesso PREMIUM?'))return;
+  var r=await sb.from('profiles').update({subscription_status:'premium'}).eq('id',id);
+  if(r.error){toast('Erro: '+r.error.message,'err');return;}
+  toast('✅ Usuário promovido a PREMIUM','ok');
+  loadUsers();
+}
+
+async function setBlock(id){
+  if(!confirm('Bloquear este usuário?'))return;
+  var r=await sb.from('profiles').update({subscription_status:'expired'}).eq('id',id);
+  if(r.error){toast('Erro: '+r.error.message,'err');return;}
+  toast('✕ Usuário bloqueado','err');
+  loadUsers();
+}
+
+async function extTrial(id,days){
+  var r=await sb.from('profiles').update({trial_start:new Date().toISOString(),trial_days:days,subscription_status:'trial'}).eq('id',id);
+  if(r.error){toast('Erro: '+r.error.message,'err');return;}
+  toast('↻ Trial estendido por '+days+' dias','inf');
+  loadUsers();
+}
+
+// ═══ FILTER ═══
+function filterUsers(){
+  var search=document.getElementById('searchInput').value.toLowerCase();
+  var status=document.getElementById('filterStatus').value;
+  var now=new Date();
+  var filtered=allUsers.filter(function(u){
+    var matchSearch=!search||u.email.toLowerCase().indexOf(search)>-1;
+    if(!matchSearch)return false;
+    if(!status)return true;
+    var st=u.subscription_status;
+    if(st==='trial'){
+      var end=new Date(new Date(u.trial_start).getTime()+u.trial_days*86400000);
+      if(now>end)st='expired';
+    }
+    return st===status;
+  });
+  renderTable(filtered);
+}
+
+// ═══ EXPORT CSV ═══
+function exportCSV(){
+  if(!allUsers.length){toast('Sem dados','err');return;}
+  var now=new Date();
+  var csv='Email,Status,Dias Restantes,Cadastro,Trial Inicio\n';
+  allUsers.forEach(function(u){
+    var start=new Date(u.trial_start);
+    var end=new Date(start.getTime()+u.trial_days*86400000);
+    var days=Math.max(0,Math.ceil((end.getTime()-now.getTime())/86400000));
+    var st=u.subscription_status;
+    if(st==='trial'&&days<=0)st='expired';
+    csv+=u.email+','+st+','+days+','+new Date(u.created_at).toLocaleDateString('pt-BR')+','+start.toLocaleDateString('pt-BR')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='especulador_usuarios_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('📥 CSV exportado','ok');
+}
+
+// ═══ TOAST ═══
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast on '+(type||'ok');
+  setTimeout(function(){t.classList.remove('on');},3000);
+}
+</script>
+</body>
+</html>
